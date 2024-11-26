@@ -1,16 +1,6 @@
 # Compiled class file
 *.class
-
-# Log file
 *.log
-
-# BlueJ files
-*.ctxt
-
-# Mobile Tools for Java (J2ME)
-.mtj.tmp/
-
-# Package Files #
 *.jar
 *.war
 *.nar
@@ -18,7 +8,17 @@
 *.zip
 *.tar.gz
 *.rar
+.idea
+target/
 
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 replay_pid*
+
+# MSX files - MSXBR-L
+# Ricardo Pinheiro
+# Fonte: https://www.dropbox.com/scl/fo/4qnsk4abls07bu5wcaeqd/AM07i9Z0tmYX5bZfwFKnjvc?rlkey=ug8b1n9b9cp19hxzt1gdqpnvy&e=1&dl=0
+msxfiles/*
+
+# Vector Database
+src/main/resources/vectorstore.json
