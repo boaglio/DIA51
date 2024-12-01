@@ -20,5 +20,7 @@ replay_pid*
 # Fonte: https://www.dropbox.com/scl/fo/4qnsk4abls07bu5wcaeqd/AM07i9Z0tmYX5bZfwFKnjvc?rlkey=ug8b1n9b9cp19hxzt1gdqpnvy&e=1&dl=0
 msxfiles/*
 
-# Vector Database
+# Vector Databases
+mongodb-data/*
+postgresql-data/*
 src/main/resources/vectorstore.json

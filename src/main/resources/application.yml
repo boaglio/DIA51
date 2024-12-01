@@ -1,10 +1,32 @@
 spring:
+  application:
+    name: dia51
   ai:
     ollama:
       chat:
         model: llama3.2
       embedding:
         model: llama3.2
+      url: http://localhost:11434
+    vectorstore:
+      pgvector:
+        index-type: HNSW
+        distance-type: COSINE_DISTANCE
+        dimension: 1536
+#      mongodb:
+#        indexName: vector_index
+#        collection-name: vector_store
+#        initialize-schema: false
+  datasource:
+    url: jdbc:postgresql://localhost:5432/vectordb
+    username: admin
+    password: admin
+    driver-class-name: org.postgresql.Driver
+#  data:
+#    mongodb:
+#      uri: mongodb+srv://boaglio:${MONGODB_ATLAS_PWD}@cluster0.pfepo.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
+#      database: msxdb
+#      collection: vectorstore
 
 springdoc:
   version: 1.0

@@ -3,101 +3,84 @@ package com.boaglio.dia51;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.reader.TextReader;
 import org.springframework.ai.transformer.splitter.TokenTextSplitter;
-import org.springframework.ai.vectorstore.SimpleVectorStore;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.FileSystemResource;
 
-import java.io.File;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Configuration
-public  class RagConfiguration {
+public class RagConfiguration {
 
-        private static final Logger log = LoggerFactory.getLogger(RagConfiguration.class);
+    private static final Logger log = LoggerFactory.getLogger(RagConfiguration.class);
 
-        @Value("vectorstore.json")
-        private String vectorStoreName;
+    private static final String FILES_DIRECTORY = "msxfiles";
 
-        private static final String FILES_DIRECTORY = "msxfiles";
+    @Autowired
+    private VectorStore vectorStore;
 
-        private final EmbeddingModel embeddingModel;
+    public void loadVectorDatabase() {
 
-        public RagConfiguration(EmbeddingModel embeddingModel) {
-            this.embeddingModel = embeddingModel;
-        }
+            var startTime = System.currentTimeMillis();
 
-        public SimpleVectorStore getSimpleVectorStore() {
+            log.info("Carregando Vector Database a partir de arquivos...");
 
-            var simpleVectorStore = new SimpleVectorStore(embeddingModel);
-            var vectorStoreFile = getVectorStoreFile();
-            if (vectorStoreFile.exists()) {
-
-                log.info("Usando arquivo do Vector Store");
-                simpleVectorStore.load(vectorStoreFile);
-
-            } else {
-
-                long startTime = System.currentTimeMillis();
-
-                log.info("Criando Vector Store, carregando...");
-                List<Document> allDocuments = new ArrayList<>();
-
-                try {
-
-                    File baseDir = Paths.get(FILES_DIRECTORY).toFile();
-                    if (!baseDir.isDirectory()) {
-                        throw new IllegalArgumentException("O caminho fornecido não é um diretório");
-                    }
-
-                    Files.walk(baseDir.toPath())
-                            .filter(Files::isRegularFile)
-                            .forEach(path -> {
-                                try {
-                                    log.info("Processando arquivo: " + path.getFileName());
-                                    var textReader = new TextReader(new FileSystemResource(path.toFile()));
-                                    textReader.getCustomMetadata().put("filename", path.getFileName().toString());
-                                    var text = textReader.get();
-                                    allDocuments.addAll(text);
-                                } catch (Exception e) {
-                                    log.warn("Falha ao processar arquivo: " + path, e);
-                                }
-                            });
-
-                } catch (Exception e) {
-                    log.error("Erro ao acessar diretório de arquivos: ", e);
-                    throw new RuntimeException("Erro ao carregar arquivos do diretório 'files'");
+            try {
+                var baseDir = Paths.get(FILES_DIRECTORY).toFile();
+                if (!baseDir.isDirectory()) {
+                    throw new IllegalArgumentException("O caminho fornecido não é um diretório");
                 }
 
-                log.info("Total de AI Documents: %d".formatted(allDocuments.size()));
+                var totalFiles = Files.walk(baseDir.toPath())
+                        .filter(Files::isRegularFile)
+                        .count();
 
-                var textSplitter = new TokenTextSplitter();
-                List<Document> splitDocuments = textSplitter.apply(allDocuments);
-                simpleVectorStore.add(splitDocuments);
+                log.info("Total de arquivos a serem processados: {}", totalFiles);
 
-                log.info("Total de Tokens: %d".formatted(splitDocuments.size()));
-                simpleVectorStore.save(vectorStoreFile);
+                var fileCounter = new AtomicInteger(1);
+                Files.walk(baseDir.toPath())
+                        .filter(Files::isRegularFile)
+                        .sorted(Comparator.comparing(Path::getFileName))
+                        .forEach(path -> {
+                            try {
+                                log.info("Processando arquivo %d/%d : %s".formatted(fileCounter.getAndIncrement(),totalFiles, path.getFileName()));
 
-                long endTime = System.currentTimeMillis();
-                long executionTime = endTime - startTime;
-                log.info("Tempo de execução : " + executionTime + " ms");
+                                var textReader = new TextReader(new FileSystemResource(path.toFile()));
+                                textReader.getCustomMetadata().put("filename", path.getFileName().toString());
+                                var text = textReader.get();
+                                List<Document> allDocuments = new ArrayList<>(text);
+                                var textSplitter = new TokenTextSplitter();
+                                List<org.springframework.ai.document.Document> splitDocuments = textSplitter.apply(allDocuments);
 
+                                log.info("Gravando : {}", splitDocuments.size());
+
+                                vectorStore.add(splitDocuments);
+
+                                Files.delete(path);
+                                log.info("Arquivo {} processado e removido com sucesso.", path.getFileName());
+
+                            } catch (Exception e) {
+                                log.warn("Falha ao processar arquivo: " + path, e);
+                            }
+                        });
+
+            } catch (Exception e) {
+                log.error("Erro ao acessar diretório de arquivos: ", e);
+                throw new RuntimeException("Erro ao carregar arquivos do diretório 'files'");
             }
-            return simpleVectorStore;
+
+            var endTime = System.currentTimeMillis();
+            var executionTime = endTime - startTime;
+            log.info("Tempo de execução : {} ms", executionTime);
         }
 
-        private File getVectorStoreFile() {
-
-            var path = Paths.get("src", "main", "resources");
-            var absolutePath = path.toFile().getAbsolutePath() + "/" + vectorStoreName;
-            return new File(absolutePath);
-
-        }
-
-    }
+}
