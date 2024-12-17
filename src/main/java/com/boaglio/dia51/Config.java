@@ -65,7 +65,7 @@ public class Config {
     @Bean
     public VectorStore postgresVectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
         // return new PgVectorStore(jdbcTemplate, embeddingModel);
-          return new PgVectorStore(jdbcTemplate, embeddingModel,-1, PgVectorStore.PgDistanceType.COSINE_DISTANCE,false, PgVectorStore.PgIndexType.NONE,true);
+          return new PgVectorStore(jdbcTemplate, embeddingModel,-1, PgVectorStore.PgDistanceType.COSINE_DISTANCE,false, PgVectorStore.PgIndexType.HNSW,false);
         }
 
 }

@@ -4,9 +4,9 @@ spring:
   ai:
     ollama:
       chat:
-        model: llama3.2
+        model: llama3.2-32k
       embedding:
-        model: llama3.2
+        model: llama3.2-32k
       url: http://localhost:11434
     vectorstore:
       pgvector:
@@ -36,4 +36,5 @@ springdoc:
     use-root-path: true
   writer-with-order-by-keys: true
 
-debug: false
+debug: true
+#debug: false
